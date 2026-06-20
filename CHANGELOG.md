@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] — 2026-06-19
+
 ### Added
 
 - **Unit test suite** (`tests/test_host_config.py`, `tests/test_ssh_client.py`) — 30 tests covering the host inventory manager and SSH client path/command/auth logic using fakes and mocks, no live host required. Run with `pytest tests/ -v`.
@@ -16,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 
 - **README**: added setup-wizard walkthrough, plus Hermes Agent (`~/.hermes/config.yaml`) and OpenClaw (via [MCPorter](https://github.com/openclaw/mcporter)) connection guides.
+
+### Fixed
+
+- Removed `sshand-0.1.0/*` — a stray sdist staging directory that had been accidentally committed to git in a previous release and was no longer present in the working tree. Added `/sshand-*/` to `.gitignore` to prevent recurrence.
+
+[0.1.1]: https://github.com/muradmalik23/sshand/releases/tag/v0.1.1
 
 ---
 

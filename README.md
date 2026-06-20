@@ -16,7 +16,15 @@ pip install sshand
 sshand setup
 ```
 
-The wizard walks you through adding your first host, testing the connection, and copying the right config snippet for whichever AI client you use.
+### What the setup wizard actually does
+
+`sshand setup` (or `python setup_wizard.py` from a checkout) runs three steps, in order:
+
+1. **Add a host** — alias, hostname/IP, port, username, and an auth method (key file, password, or ssh-agent). On Windows it also checks whether the OpenSSH Authentication Agent service is running and offers to start it for you if you picked agent auth.
+2. **Test the connection** — it immediately tries to connect with what you just entered and runs a no-op command, so you find out right away if something's wrong (bad path, wrong port, unreachable host) instead of during your first real agent session. The host is saved either way — if the test fails, fix the issue and just run `sshand setup` again.
+3. **Generate client config** — pick one or more AI clients from a list (space-separated numbers, or Enter for all) and the wizard prints a ready-to-paste config snippet for each, with the correct absolute paths already filled in. Today's options: Claude Desktop, Cursor, VS Code (GitHub Copilot Chat), OpenAI (Agents SDK / ChatGPT Desktop), and a generic "Other" HTTP option for any MCP-compatible client not listed by name.
+
+You can run the wizard again any time — to add another host, or to reprint client config snippets without touching your existing hosts. It never overwrites a host without asking first.
 
 ---
 
@@ -43,7 +51,7 @@ This is the cleanest option to recommend to non-technical users.
 ### Option C — plain Python (no install)
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/sshand
+git clone https://github.com/muradmalik23/sshand
 cd sshand
 pip install -r requirements.txt
 python server.py            # start server
@@ -152,6 +160,70 @@ from agents.mcp import MCPServerStreamableHttp
 ssh_server = MCPServerStreamableHttp(url="http://localhost:8000/mcp")
 agent = Agent(name="ops-agent", mcp_servers=[ssh_server])
 ```
+
+---
+
+### Hermes Agent
+
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) (Nous Research) reads MCP server config from `~/.hermes/config.yaml` under the `mcp_servers` key — same `command`/`args`/`env` shape as everywhere else:
+
+```yaml
+mcp_servers:
+  ssh:
+    command: "uvx"
+    args: ["sshand"]
+    env:
+      SSH_MCP_HOSTS_FILE: "/absolute/path/to/hosts.yaml"
+```
+
+If you installed SSHand from source instead of via `uvx`, point `command` at `python` and add `["/absolute/path/to/sshand/server.py"]` as `args`, same as the Claude Desktop snippet above.
+
+Start (or reload) Hermes to pick it up:
+
+```bash
+hermes chat          # fresh start
+/reload-mcp          # or, from inside a running session
+```
+
+Hermes prefixes every tool with `mcp_<server_name>_`, so e.g. `ssh_run_command` shows up as `mcp_ssh_ssh_run_command` — you won't normally need the prefixed name, Hermes picks the right tool from your prompt on its own.
+
+---
+
+### OpenClaw
+
+OpenClaw doesn't take MCP servers directly — it calls them through [MCPorter](https://github.com/openclaw/mcporter), a separate CLI that OpenClaw shells out to for schema discovery and tool calls. Install MCPorter first:
+
+```bash
+npm install -g mcporter
+```
+
+Then register SSHand with it:
+
+```bash
+mcporter config add ssh --command uvx --args sshand --env SSH_MCP_HOSTS_FILE=/absolute/path/to/hosts.yaml
+```
+
+That writes an entry to `config/mcporter.json` (or `~/.mcporter/mcporter.json` for a machine-wide install) in the same `mcpServers` shape used everywhere else:
+
+```jsonc
+{
+  "mcpServers": {
+    "ssh": {
+      "command": "uvx",
+      "args": ["sshand"],
+      "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }
+    }
+  }
+}
+```
+
+Confirm MCPorter can see it and list the tools:
+
+```bash
+mcporter list ssh --schema
+```
+
+No further OpenClaw-side config is needed — just ask it to do something that needs SSH (e.g. *"check disk usage on webserver"*) and OpenClaw will invoke `mcporter call ssh.ssh_run_command ...` on its own.
 
 ---
 

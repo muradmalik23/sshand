@@ -33,11 +33,10 @@ dependencies = [
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
 
 [project.urls]
-# TODO: replace YOUR_GITHUB_USERNAME with your real GitHub username before publishing
-Homepage   = "https://github.com/YOUR_GITHUB_USERNAME/sshand"
-Repository = "https://github.com/YOUR_GITHUB_USERNAME/sshand"
-Issues     = "https://github.com/YOUR_GITHUB_USERNAME/sshand/issues"
-Changelog  = "https://github.com/YOUR_GITHUB_USERNAME/sshand/blob/main/CHANGELOG.md"
+Homepage   = "https://github.com/muradmalik23/sshand"
+Repository = "https://github.com/muradmalik23/sshand"
+Issues     = "https://github.com/muradmalik23/sshand/issues"
+Changelog  = "https://github.com/muradmalik23/sshand/blob/main/CHANGELOG.md"
 
 [project.scripts]
 sshand = "server:main"

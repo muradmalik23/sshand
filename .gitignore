@@ -17,6 +17,9 @@ build/
 *.egg-info/
 *.egg
 MANIFEST
+# `python -m build` stages an sdist as <name>-<version>/ in the repo root
+# when run without --outdir — catch that too, not just dist/.
+/sshand-*/
 
 # ── Virtual environments ──────────────────────────────────────────────────
 .venv/
@@ -33,16 +36,27 @@ ENV/
 # ── Testing / coverage ────────────────────────────────────────────────────
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
+.mypy_cache/
+.ruff_cache/
 
 # ── IDE / editor ─────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*.bak
+*.orig
 .DS_Store
 Thumbs.db
+
+# ── Node (MCP Inspector via npx) ──────────────────────────────────────────
+# `npx @modelcontextprotocol/inspector` can drop a local cache here if it
+# can't use the global npm cache — keep it out of the repo just in case.
+node_modules/
+package-lock.json
 
 # ── Misc ──────────────────────────────────────────────────────────────────
 *.log

@@ -45,14 +45,12 @@ These are worth doing after the GitHub and PyPI releases are stable.
 ### Pre-release
 
 - [ ] Delete stale build artifacts from old package names: `rm -rf ssh_mcp.egg-info emissary.egg-info`
-- [ ] All 11 tools verified end-to-end with MCP Inspector (`pytest` currently reports "no tests ran" — there's no unit test suite yet, so the Inspector pass is the real verification step; see `CONTRIBUTING.md`)
+- [ ] `pytest tests/ -v` passes (unit tests for `host_config.py` / `ssh_client.py`)
+- [ ] All 11 tools verified end-to-end with MCP Inspector — unit tests don't open a real SSH connection, so this manual pass is still required before every release; see `CONTRIBUTING.md`
 - [ ] `hosts.yaml` contains no real credentials (check against `hosts.yaml.example`)
 - [ ] `hosts.yaml` is listed in `.gitignore`
 - [ ] Version bumped in `pyproject.toml` (currently `0.1.0`)
 - [ ] `CHANGELOG.md` updated — move items from `[Unreleased]` to the new version section
-- [ ] GitHub URL placeholders replaced in `pyproject.toml`, `CHANGELOG.md`, `CONTRIBUTING.md`, and `RELEASE.md`
-  - Find: `YOUR_GITHUB_USERNAME`
-  - Replace with your actual GitHub username
 - [ ] Quick-start test in a clean venv: `pip install sshand && sshand setup`
 
 ### Build and publish to PyPI
@@ -92,7 +90,7 @@ Attach the files from `dist/` (the `.whl` and `.tar.gz`) as release assets.
 2. Add an entry to the README in the **"Remote access / Infrastructure"** category (or the closest match):
 
 ```markdown
-- **[SSHand](https://github.com/YOUR_GITHUB_USERNAME/sshand)** — Full SSH shell access,
+- **[SSHand](https://github.com/muradmalik23/sshand)** — Full SSH shell access,
   file read/write, and SFTP for any Linux/Unix machine. Works with Claude Desktop, Claude.ai,
   ChatGPT Desktop, Cursor, VS Code Copilot, OpenAI Agents SDK, and any HTTP MCP client.
 ```

@@ -7,7 +7,7 @@ Thanks for your interest in contributing! This document covers how to set up a d
 ## Development setup
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/sshand
+git clone https://github.com/muradmalik23/sshand
 cd sshand
 
 # Create and activate a virtual environment
@@ -25,9 +25,15 @@ You can then run the server directly with `python server.py` or `sshand`.
 
 ## Running tests
 
-There is no automated unit test suite yet (`pytest` will report "no tests ran" — `pytest-asyncio` is listed as a dev dependency for when one is added, but no `test_*.py` files exist in the repo today). Until then, the MCP Inspector workflow below is the real verification step — use it to confirm every tool still works end-to-end before opening a PR or cutting a release.
+```bash
+pytest tests/ -v
+```
 
-Contributions that add `test_*.py` files (especially around `host_config.py` and `ssh_client.py`, which don't require a live SSH host to unit test) are very welcome.
+`tests/test_host_config.py` and `tests/test_ssh_client.py` cover the YAML inventory manager and the path/command/auth-building logic in the SSH client using fakes and mocks — no live host required. They run in well under a second.
+
+What they intentionally **don't** cover: actually opening a TCP/SSH connection or talking SFTP to a real server. For that, the MCP Inspector workflow below is still the real end-to-end verification step — use it to confirm every tool works against a live host before opening a PR or cutting a release.
+
+Contributions that extend the unit tests (more edge cases in `host_config.py`/`ssh_client.py`) or that add coverage for `server.py`'s tool wrappers are very welcome.
 
 ---
 

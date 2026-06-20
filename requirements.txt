@@ -1,0 +1,4 @@
+mcp[cli]>=1.6.0        # FastMCP and the MCP SDK
+paramiko>=3.4.0        # SSH client (command exec + SFTP)
+pyyaml>=6.0            # YAML host inventory parsing
+pydantic>=2.7.0        # Input validation models

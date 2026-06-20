@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sshand"
+version = "0.1.0"
+description = "MCP server — give any AI agent SSH access to remote Linux/Unix machines"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["mcp", "ssh", "ai", "agent", "claude", "openai", "llm", "sshand"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "mcp[cli]>=1.6.0",
+    "paramiko>=3.4.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.7.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[project.urls]
+# TODO: replace YOUR_GITHUB_USERNAME with your real GitHub username before publishing
+Homepage   = "https://github.com/YOUR_GITHUB_USERNAME/sshand"
+Repository = "https://github.com/YOUR_GITHUB_USERNAME/sshand"
+Issues     = "https://github.com/YOUR_GITHUB_USERNAME/sshand/issues"
+Changelog  = "https://github.com/YOUR_GITHUB_USERNAME/sshand/blob/main/CHANGELOG.md"
+
+[project.scripts]
+sshand = "server:main"
+
+[tool.setuptools]
+py-modules = ["server", "ssh_client", "host_config", "setup_wizard", "platform_utils"]

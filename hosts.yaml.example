@@ -1,0 +1,42 @@
+# Emissary — Host Inventory Template
+#
+# Copy this file to hosts.yaml and fill in your real values:
+#   cp hosts.yaml.example hosts.yaml
+#
+# hosts.yaml is excluded from version control (.gitignore) to keep
+# credentials out of your repository.
+#
+# Add hosts interactively via:  emissary setup
+# --------------------------------------------------------------------------
+
+hosts:
+
+  # ── Key-based auth (recommended — most secure) ───────────────────────────
+  webserver:
+    hostname: 203.0.113.10          # IP address or FQDN
+    port: 22
+    username: ubuntu
+    auth:
+      type: key
+      key_path: ~/.ssh/id_rsa       # ~ is expanded automatically
+      passphrase: null              # set if the key is encrypted
+    description: Production web server
+
+  # ── SSH agent (no credentials stored at all) ──────────────────────────────
+  bastion:
+    hostname: bastion.example.com
+    port: 2222
+    username: ops
+    auth:
+      type: agent
+    description: SSH bastion / jump host
+
+  # ── Password auth (fine for local VMs, avoid on public servers) ───────────
+  devbox:
+    hostname: 192.168.56.10
+    port: 22
+    username: vagrant
+    auth:
+      type: password
+      password: changeme
+    description: Local Vagrant dev environment

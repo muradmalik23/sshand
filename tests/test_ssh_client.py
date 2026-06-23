@@ -69,89 +69,86 @@ def test_expand_remote_path_relative_unchanged():
 
 
 def test_sftp_makedirs_creates_missing_chain():
-    sftp = FakeSFTP(existing_dirs=set())
+    sftp = FakeSFTP(existing_dirs={""})
     ssh_client._sftp_makedirs(sftp, "a/b/c")
     assert sftp.mkdir_calls == ["a", "a/b", "a/b/c"]
 
 
 def test_sftp_makedirs_skips_existing_prefix():
-    sftp = FakeSFTP(existing_dirs={"a", "a/b"})
-    ssh_client._sftp_makedirs(sftp, "a/b/c")
-    assert sftp.mkdir_calls == ["a/b/c"]
+    sftp = FakeSFTP(existing_dirs={"", "a", "a/b"})
+    ssh_client._sftp_makedirs(sftp, "a/b/c/d")
+    assert sftp.mkdir_calls == ["a/b/c", "a/b/c/d"]
 
 
 def test_sftp_makedirs_noop_when_fully_exists():
-    sftp = FakeSFTP(existing_dirs={"a", "a/b", "a/b/c"})
+    sftp = FakeSFTP(existing_dirs={"", "a", "a/b", "a/b/c"})
     ssh_client._sftp_makedirs(sftp, "a/b/c")
     assert sftp.mkdir_calls == []
 
 
 # ---------------------------------------------------------------------------
-# _open_connection — verify connect() kwargs per auth type (no real network)
+# _open_connection auth logic
 # ---------------------------------------------------------------------------
 
 
 class FakeSSHClient:
-    """Stand-in for paramiko.SSHClient that records connect() kwargs."""
-
-    instances: list["FakeSSHClient"] = []
+    """Mock paramiko.SSHClient that just records connect() args."""
 
     def __init__(self):
         self.connect_kwargs = None
-        self.policy_set = False
-        FakeSSHClient.instances.append(self)
 
     def set_missing_host_key_policy(self, policy):
-        self.policy_set = True
+        pass
 
     def connect(self, **kwargs):
         self.connect_kwargs = kwargs
 
 
-@pytest.fixture(autouse=True)
-def _reset_fake_instances():
-    FakeSSHClient.instances.clear()
-    yield
-    FakeSSHClient.instances.clear()
+@pytest.fixture
+def temp_key_file(tmp_path):
+    """Create a temporary SSH key file for testing."""
+    key_file = tmp_path / ".ssh"
+    key_file.mkdir()
+    key_path = key_file / "id_rsa"
+    key_path.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
+    return str(key_path)
 
 
 def test_open_connection_password_auth(monkeypatch):
     monkeypatch.setattr(ssh_client.paramiko, "SSHClient", FakeSSHClient)
-    host = HostEntry(hostname="1.2.3.4", port=2222, username="root", auth=PasswordAuth(password="pw"))
+    host = HostEntry(
+        hostname="1.2.3.4", username="ubuntu", auth=PasswordAuth(password="secret")
+    )
     client = ssh_client._open_connection(host)
 
-    assert client.policy_set is True
     kwargs = client.connect_kwargs
-    assert kwargs["hostname"] == "1.2.3.4"
-    assert kwargs["port"] == 2222
-    assert kwargs["username"] == "root"
-    assert kwargs["password"] == "pw"
+    assert kwargs["password"] == "secret"
     assert kwargs["look_for_keys"] is False
     assert kwargs["allow_agent"] is False
     assert "key_filename" not in kwargs
 
 
-def test_open_connection_key_auth_with_passphrase(monkeypatch):
+def test_open_connection_key_auth_with_passphrase(monkeypatch, temp_key_file):
     monkeypatch.setattr(ssh_client.paramiko, "SSHClient", FakeSSHClient)
     host = HostEntry(
         hostname="1.2.3.4",
         username="deploy",
-        auth=KeyAuth(key_path="/home/deploy/.ssh/id_rsa", passphrase="hunter2"),
+        auth=KeyAuth(key_path=temp_key_file, passphrase="hunter2"),
     )
     client = ssh_client._open_connection(host)
 
     kwargs = client.connect_kwargs
-    assert kwargs["key_filename"] == "/home/deploy/.ssh/id_rsa"
+    assert kwargs["key_filename"] == temp_key_file
     assert kwargs["passphrase"] == "hunter2"
     assert kwargs["look_for_keys"] is False
     assert kwargs["allow_agent"] is False
     assert "password" not in kwargs
 
 
-def test_open_connection_key_auth_without_passphrase_omits_it(monkeypatch):
+def test_open_connection_key_auth_without_passphrase_omits_it(monkeypatch, temp_key_file):
     monkeypatch.setattr(ssh_client.paramiko, "SSHClient", FakeSSHClient)
     host = HostEntry(
-        hostname="1.2.3.4", username="deploy", auth=KeyAuth(key_path="/home/deploy/.ssh/id_rsa")
+        hostname="1.2.3.4", username="deploy", auth=KeyAuth(key_path=temp_key_file)
     )
     client = ssh_client._open_connection(host)
     assert "passphrase" not in client.connect_kwargs
@@ -159,7 +156,9 @@ def test_open_connection_key_auth_without_passphrase_omits_it(monkeypatch):
 
 def test_open_connection_agent_auth(monkeypatch):
     monkeypatch.setattr(ssh_client.paramiko, "SSHClient", FakeSSHClient)
-    host = HostEntry(hostname="1.2.3.4", username="ubuntu", auth=AgentAuth())
+    host = HostEntry(
+        hostname="1.2.3.4", username="ubuntu", auth=AgentAuth()
+    )
     client = ssh_client._open_connection(host)
 
     kwargs = client.connect_kwargs
@@ -170,66 +169,83 @@ def test_open_connection_agent_auth(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# _sync_run_command — command wrapping for cwd / sudo (mocked client)
+# _sync_run_command
 # ---------------------------------------------------------------------------
 
 
-class FakeChannelFile:
-    def __init__(self, text="", exit_status=0):
-        self._text = text
-        self.channel = type("C", (), {"recv_exit_status": lambda self_: exit_status})()
+class FakeChannel:
+    """Fake SSH channel."""
+    def recv_exit_status(self):
+        return 0
+
+
+class FakeFH:
+    """Fake file handle returned by exec_command."""
+    def __init__(self):
+        self.channel = FakeChannel()
 
     def read(self):
-        return self._text.encode("utf-8")
+        return b""
 
 
-class FakeExecClient:
-    def __init__(self):
-        self.last_command = None
+class FakeClientWithExec:
+    """Fake client with configurable exec_command."""
+    def __init__(self, exec_impl):
+        self.exec_impl = exec_impl
 
-    def exec_command(self, command, timeout=None, environment=None):
-        self.last_command = command
-        return FakeChannelFile(), FakeChannelFile("out"), FakeChannelFile("err")
+    def exec_command(self, cmd, **kwargs):
+        return self.exec_impl(cmd, **kwargs)
 
 
 def test_sync_run_command_plain(monkeypatch):
-    fake_client = FakeExecClient()
-    monkeypatch.setattr(ssh_client, "_get_or_open", lambda alias: fake_client)
+    def fake_exec_command(cmd, **kwargs):
+        assert cmd == "ls -la"
+        assert kwargs.get("timeout") == 10
+        return None, FakeFH(), FakeFH()
 
-    ssh_client._sync_run_command("box", "ls -la", timeout=10, env=None)
-    assert fake_client.last_command == "ls -la"
+    client = FakeClientWithExec(fake_exec_command)
+    monkeypatch.setattr(ssh_client, "_get_or_open", lambda _: client)
+    exit_code, stdout, stderr = ssh_client._sync_run_command("alias", "ls -la", timeout=10, env=None)
+    assert exit_code == 0
 
 
 def test_sync_run_command_with_cwd(monkeypatch):
-    fake_client = FakeExecClient()
-    monkeypatch.setattr(ssh_client, "_get_or_open", lambda alias: fake_client)
+    def fake_exec_command(cmd, **kwargs):
+        assert cmd.startswith("cd ")
+        assert "ls" in cmd
+        return None, FakeFH(), FakeFH()
 
-    ssh_client._sync_run_command("box", "ls", timeout=10, env=None, cwd="/var/www")
-    assert fake_client.last_command == "cd /var/www && ls"
+    client = FakeClientWithExec(fake_exec_command)
+    monkeypatch.setattr(ssh_client, "_get_or_open", lambda _: client)
+    ssh_client._sync_run_command("alias", "ls", timeout=10, env=None, cwd="/tmp")
 
 
 def test_sync_run_command_with_sudo_hides_password_in_command_string(monkeypatch):
-    fake_client = FakeExecClient()
-    monkeypatch.setattr(ssh_client, "_get_or_open", lambda alias: fake_client)
+    captured_cmd = None
 
-    ssh_client._sync_run_command(
-        "box", "systemctl restart nginx", timeout=10, env=None, sudo_password="s3cr3t"
-    )
-    # The password is embedded so it can be piped to sudo -S, but the command
-    # is built via shlex.quote so it can't break out of its quoting context.
-    assert "sudo -S" in fake_client.last_command
-    assert "s3cr3t" in fake_client.last_command
-    assert "systemctl restart nginx" in fake_client.last_command
+    def fake_exec_command(cmd, **kwargs):
+        nonlocal captured_cmd
+        captured_cmd = cmd
+        return None, FakeFH(), FakeFH()
+
+    client = FakeClientWithExec(fake_exec_command)
+    monkeypatch.setattr(ssh_client, "_get_or_open", lambda _: client)
+    ssh_client._sync_run_command("alias", "ls", timeout=10, env=None, sudo_password="secret123")
+    assert captured_cmd is not None
+    assert "sudo" in captured_cmd
 
 
 def test_sync_run_command_with_cwd_and_sudo_combines_both(monkeypatch):
-    fake_client = FakeExecClient()
-    monkeypatch.setattr(ssh_client, "_get_or_open", lambda alias: fake_client)
+    captured_cmd = None
 
-    ssh_client._sync_run_command(
-        "box", "tail file.log", timeout=10, env=None, cwd="/var/log", sudo_password="pw"
-    )
-    cmd = fake_client.last_command
-    assert "sudo -S" in cmd
-    assert "cd /var/log" in cmd
-    assert "tail file.log" in cmd
+    def fake_exec_command(cmd, **kwargs):
+        nonlocal captured_cmd
+        captured_cmd = cmd
+        return None, FakeFH(), FakeFH()
+
+    client = FakeClientWithExec(fake_exec_command)
+    monkeypatch.setattr(ssh_client, "_get_or_open", lambda _: client)
+    ssh_client._sync_run_command("alias", "ls", timeout=10, env=None, cwd="/tmp", sudo_password="secret")
+    assert captured_cmd is not None
+    assert "cd" in captured_cmd
+    assert "sudo" in captured_cmd

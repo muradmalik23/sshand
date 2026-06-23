@@ -139,8 +139,16 @@ def test_unknown_field_rejected_due_to_extra_forbid():
         )
 
 
-def test_key_auth_expands_user_home(monkeypatch):
-    monkeypatch.setenv("HOME", "/home/testuser")
+def test_key_auth_expands_user_home(tmp_path, monkeypatch):
+    # Create a real key file to test path expansion
+    home = tmp_path / "home"
+    home.mkdir()
+    ssh_dir = home / ".ssh"
+    ssh_dir.mkdir()
+    key_file = ssh_dir / "id_rsa"
+    key_file.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
+
+    monkeypatch.setenv("HOME", str(home))
     auth = KeyAuth(key_path="~/.ssh/id_rsa")
     assert "~" not in auth.key_path
     assert auth.key_path.endswith(".ssh/id_rsa") or auth.key_path.endswith(".ssh\\id_rsa")
@@ -154,3 +162,43 @@ def test_password_auth_requires_password():
 def test_agent_auth_rejects_extra_fields():
     with pytest.raises(ValidationError):
         AgentAuth(password="should-not-be-allowed")
+
+
+def test_key_auth_validates_key_file_exists(tmp_path):
+    """KeyAuth should reject paths to non-existent key files."""
+    nonexistent = tmp_path / "nonexistent_key"
+    with pytest.raises(ValidationError) as exc_info:
+        KeyAuth(key_path=str(nonexistent))
+    assert "not found" in str(exc_info.value).lower()
+
+
+def test_key_auth_accepts_existing_key_file(tmp_path):
+    """KeyAuth should accept paths to existing key files."""
+    key_file = tmp_path / "id_rsa"
+    key_file.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
+    auth = KeyAuth(key_path=str(key_file))
+    assert auth.key_path == str(key_file)
+
+
+def test_key_auth_expands_tilde_to_existing_file(tmp_path, monkeypatch):
+    """KeyAuth should expand ~ in paths and validate the file exists."""
+    home = tmp_path / "home"
+    home.mkdir()
+    ssh_dir = home / ".ssh"
+    ssh_dir.mkdir()
+    key_file = ssh_dir / "id_rsa"
+    key_file.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n...")
+
+    monkeypatch.setenv("HOME", str(home))
+    auth = KeyAuth(key_path="~/.ssh/id_rsa")
+    assert auth.key_path == str(key_file)
+    assert "~" not in auth.key_path
+
+
+def test_key_auth_missing_file_shows_helpful_error(tmp_path):
+    """KeyAuth error message should mention key file location."""
+    nonexistent = tmp_path / "missing_key"
+    with pytest.raises(ValidationError) as exc_info:
+        KeyAuth(key_path=str(nonexistent))
+    error_msg = str(exc_info.value)
+    assert "not found" in error_msg.lower()

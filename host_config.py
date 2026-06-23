@@ -54,7 +54,19 @@ class KeyAuth(BaseModel):
     @field_validator("key_path")
     @classmethod
     def expand_path(cls, v: str) -> str:
-        return str(Path(v).expanduser())
+        expanded = Path(v).expanduser()
+        # Validate that the key file exists; give a helpful error on Windows if it doesn't.
+        if not expanded.exists():
+            # Build a helpful error message specific to the user's platform
+            msg = f"SSH key file not found: {expanded}"
+            if expanded.drive and expanded.drive[0].isalpha():  # Windows path
+                msg += (
+                    f"\n\nOn Windows, SSH keys are typically in "
+                    f"{Path.home() / '.ssh'}.\n"
+                    f"Check that the file exists and the path is correct."
+                )
+            raise ValueError(msg)
+        return str(expanded)
 
 
 class PasswordAuth(BaseModel):

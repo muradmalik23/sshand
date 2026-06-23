@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Interactive terminal UI** (`manage.py`, built on `rich` + `questionary`) with a warm yellow→amber palette and an ANSI-Shadow banner. `sshand manage` opens a host manager (a live, in-place table plus list / add / test / remove and reprintable client-config snippets); `sshand setup` now runs the same UI for the guided first-run flow.
+- **Two new client-config snippet options** in the config step — **Hermes Agent** (`~/.hermes/config.yaml`) and **OpenClaw** (via [MCPorter](https://github.com/openclaw/mcporter)) — alongside Claude Desktop, Cursor, VS Code, OpenAI, and the generic HTTP option. The snippet step also lists the hosts the agent will be able to reach.
+
+### Changed
+
+- `rich` and `questionary` are now required runtime dependencies (added to `pyproject.toml` and `requirements.txt`).
+- The client picker is a single-select menu (with an "All of them" choice) instead of a checkbox, removing the space-to-toggle confusion that could land on an empty selection.
+
+### Fixed
+
+- Client-config snippets that contain JSON arrays / ANSI codes are now printed without markup parsing, so they render intact instead of being mangled.
+
 ---
 
 ## [0.1.1] — 2026-06-19

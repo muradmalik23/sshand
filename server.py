@@ -899,6 +899,10 @@ def main() -> None:
         "setup",
         help="Interactive wizard: add a host, test it, and get AI-client config snippets.",
     )
+    sub.add_parser(
+        "manage",
+        help="Interactive host manager (rich + questionary): list, add, test, and remove hosts.",
+    )
 
     parser.add_argument(
         "--transport",
@@ -923,8 +927,13 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.subcommand == "setup":
-        from setup_wizard import run as run_wizard
-        run_wizard()
+        from manage import run as run_manage
+        run_manage("setup")
+        return
+
+    if args.subcommand == "manage":
+        from manage import run as run_manage
+        run_manage("menu")
         return
 
     if args.transport == "http":

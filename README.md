@@ -12,19 +12,55 @@ Works with **Claude.ai**, **Claude Desktop**, **ChatGPT**, **Cursor**, **VS Code
 # 1. Install
 pip install sshand
 
-# 2. Run the interactive setup wizard
+# 2. First-run setup: add a host, test it, print client config
 sshand setup
+
+# 3. Manage hosts any time (add / test / remove + reprint config)
+sshand manage
 ```
 
-### What the setup wizard actually does
+Both commands open the same clean interactive terminal UI — use the **arrow keys** to move and **Enter** to select. `setup` runs the guided first-run flow; `manage` is the ongoing host manager.
 
-`sshand setup` (or `python setup_wizard.py` from a checkout) runs three steps, in order:
+---
 
-1. **Add a host** — alias, hostname/IP, port, username, and an auth method (key file, password, or ssh-agent). On Windows it also checks whether the OpenSSH Authentication Agent service is running and offers to start it for you if you picked agent auth.
-2. **Test the connection** — it immediately tries to connect with what you just entered and runs a no-op command, so you find out right away if something's wrong (bad path, wrong port, unreachable host) instead of during your first real agent session. The host is saved either way — if the test fails, fix the issue and just run `sshand setup` again.
-3. **Generate client config** — pick one or more AI clients from a list (space-separated numbers, or Enter for all) and the wizard prints a ready-to-paste config snippet for each, with the correct absolute paths already filled in. Today's options: Claude Desktop, Cursor, VS Code (GitHub Copilot Chat), OpenAI (Agents SDK / ChatGPT Desktop), and a generic "Other" HTTP option for any MCP-compatible client not listed by name.
+## Setup guide
 
-You can run the wizard again any time — to add another host, or to reprint client config snippets without touching your existing hosts. It never overwrites a host without asking first.
+`sshand setup` walks you through three steps:
+
+**1. Add a host.** You'll be asked for:
+
+- **Alias** — a short nickname like `webserver` or `db-prod`.
+- **Hostname / IP**, **port** (default `22`), and **username**.
+- **Authentication method:**
+  - **SSH key file** (recommended) — path to your private key, plus an optional passphrase.
+  - **Password** — convenient for dev/test, avoid on internet-facing hosts.
+  - **SSH agent** — delegates to your running `ssh-agent`; no credentials stored. On Windows the wizard also checks whether the OpenSSH Authentication Agent service is running and offers to start it.
+
+The host is saved to `hosts.yaml` (or the path in `SSH_MCP_HOSTS_FILE`). An existing host is never overwritten without confirmation.
+
+**2. Test the connection.** SSHand immediately connects and runs a no-op command, so you find out right away if something is wrong (bad key path, wrong port, unreachable host) instead of mid-conversation later. The host is saved either way — if the test fails, fix the issue and run `sshand setup` again.
+
+**3. Print client config.** Pick a client (or **All of them**) and SSHand prints a ready-to-paste config snippet with the correct absolute paths already filled in:
+
+> Claude Desktop · Cursor · VS Code (GitHub Copilot Chat) · OpenAI (Agents SDK / ChatGPT Desktop) · Hermes Agent · OpenClaw (via MCPorter) · Other (HTTP)
+
+Full per-client instructions are in [Connecting to your AI client](#connecting-to-your-ai-client) below.
+
+> Run `sshand setup` again any time to add another host or reprint a snippet — it won't touch your existing hosts.
+
+---
+
+## Managing your hosts
+
+`sshand manage` opens the interactive host manager — a live table of your configured hosts plus a menu:
+
+- **List hosts** — refresh the table.
+- **Add a host** — the same flow as setup, with an optional connection test afterwards.
+- **Test a host** — connect and report success or failure.
+- **Remove a host** — delete an entry (with confirmation).
+- **Client config snippets** — reprint the paste-ready config for any client, prefaced with the list of hosts the agent will be able to reach.
+
+The screen refreshes in place after each action, with the result of your last action shown above the menu. Press **q** / choose **Quit** to exit.
 
 ---
 
@@ -55,7 +91,8 @@ git clone https://github.com/muradmalik23/sshand
 cd sshand
 pip install -r requirements.txt
 python server.py            # start server
-python setup_wizard.py      # run wizard
+python manage.py setup      # run the setup wizard
+python manage.py            # interactive host manager
 ```
 
 ---
@@ -320,7 +357,8 @@ auth:
 sshand [subcommand] [options]
 
 Subcommands:
-  setup                  Interactive first-run wizard
+  setup                  Interactive first-run wizard (add a host, test, print config)
+  manage                 Interactive host manager (add / test / remove + config snippets)
 
 Options:
   --transport {stdio,http}   Transport (default: stdio)
@@ -330,6 +368,7 @@ Options:
 Examples:
   sshand                    # start stdio server
   sshand setup              # first-run wizard
+  sshand manage             # interactive host manager
   sshand --transport http   # start HTTP server on :8000
 ```
 
@@ -352,7 +391,8 @@ sshand/
 ├── server.py           # FastMCP server — all 11 tools + CLI entry point
 ├── ssh_client.py       # Async paramiko wrapper (command exec + SFTP)
 ├── host_config.py      # YAML host inventory manager
-├── setup_wizard.py     # Interactive first-run setup wizard
+├── manage.py           # Interactive TUI — setup wizard + host manager (rich + questionary)
+├── setup_wizard.py     # Client-config snippet builders + Windows agent helpers (used by manage.py)
 ├── platform_utils.py   # Windows SSH agent helpers
 ├── hosts.yaml.example  # Safe template — copy to hosts.yaml and fill in your values
 ├── hosts.yaml          # Your SSH targets (gitignored — copy from hosts.yaml.example)

@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Client-config snippets that contain JSON arrays / ANSI codes are now printed without markup parsing, so they render intact instead of being mangled.
+- **Hosts saved by `sshand setup`/`sshand manage` were sometimes invisible to `ssh_test_connection`/`ssh_run_command`, reporting "Host not found" right after a successful save.** `manage.py` and `setup_wizard.py` defaulted to a current-directory-relative `hosts.yaml`, while `host_config.get_host()` (used internally by the SSH client) defaulted to a package-directory-relative path — the two only matched when running from inside the repo with the venv active. All entry points now resolve the default through a single `host_config.DEFAULT_HOSTS_FILE` constant.
+- **The default inventory location no longer follows the install directory.** It previously lived beside `host_config.py` wherever pip/uvx happened to install it — meaning a plain `pip install`, a `uvx` run, and a from-source checkout each got their own separate, invisible `hosts.yaml`, so a host added under one install method never showed up under another. `DEFAULT_HOSTS_FILE` now points at `~/.sshand/hosts.yaml`, shared by every install method on the machine. `SSH_MCP_HOSTS_FILE` still overrides it.
 
 ---
 

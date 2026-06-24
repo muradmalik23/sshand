@@ -27,10 +27,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 # must resolve the default through this constant rather than re-deriving it
 # themselves — a host added via one default and looked up via a different
 # default is exactly how "saved fine, then not found" bugs happen.
+#
+# Deliberately NOT package-directory-relative (no more Path(__file__).parent).
+# A pip/uvx install puts this file's code inside some site-packages or tool
+# cache directory that differs per install method and per machine — a plain
+# `pip install sshand`, a `uvx sshand` run, and a from-source editable install
+# all land in different directories. If the default followed __file__, each
+# of those would silently keep its own separate hosts.yaml, so a host added
+# under one would be invisible to the others even though "it's the same
+# package". Anchoring on the user's home directory instead gives every
+# install method the same answer for "where's my inventory" by default.
 # ---------------------------------------------------------------------------
 
 DEFAULT_HOSTS_FILE = Path(
-    os.environ.get("SSH_MCP_HOSTS_FILE", str(Path(__file__).parent / "hosts.yaml"))
+    os.environ.get("SSH_MCP_HOSTS_FILE", str(Path.home() / ".sshand" / "hosts.yaml"))
 )
 
 
@@ -195,3 +205,19 @@ def remove_host(alias: str, hosts_file: Path = DEFAULT_HOSTS_FILE) -> None:
         raise KeyError(f"Host '{alias}' not found in inventory.")
     del data["hosts"][alias]
     _save_raw(data, hosts_file)
+
+
+def ensure_hosts_file(hosts_file: Path = DEFAULT_HOSTS_FILE) -> Path:
+    """
+    Create an empty inventory file (and its parent directory) if one doesn't
+    exist yet at `hosts_file`. Safe to call repeatedly.
+
+    Without this, `~/.sshand/hosts.yaml` only appears the first time a host
+    is added — confusing if you go looking for it right after install/setup
+    and find nothing there yet. Call this once from each real entry point
+    (server.py's main(), manage.py's run()) rather than at import time, so
+    importing host_config for tests never touches the real filesystem.
+    """
+    if not hosts_file.exists():
+        _save_raw({"hosts": {}}, hosts_file)
+    return hosts_file

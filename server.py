@@ -926,6 +926,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Make sure ~/.sshand/hosts.yaml (or SSH_MCP_HOSTS_FILE) exists from the
+    # first run, whether that first run is the server, "setup", or "manage" —
+    # don't make the user wait until they've added a host to see the file.
+    hc.ensure_hosts_file(_HOSTS_FILE)
+
     if args.subcommand == "setup":
         from manage import run as run_manage
         run_manage("setup")

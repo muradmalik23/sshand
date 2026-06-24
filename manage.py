@@ -564,6 +564,9 @@ def run_manager() -> None:
 
 def run(mode: str = "menu") -> None:
     """mode: 'setup' for the wizard, 'menu' for the host manager."""
+    import host_config as hc
+
+    hc.ensure_hosts_file(_hosts_file())
     try:
         run_setup() if mode == "setup" else run_manager()
     except KeyboardInterrupt:

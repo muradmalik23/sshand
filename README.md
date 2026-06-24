@@ -278,12 +278,13 @@ For remote access, put a reverse proxy (nginx / Caddy) in front with TLS. Never 
 
 ## Host inventory
 
-Hosts are stored in `hosts.yaml` (set a different path with the `SSH_MCP_HOSTS_FILE` env var). You can edit the file directly or let your agent call `ssh_add_host`.
+By default, hosts are stored in `~/.sshand/hosts.yaml` — created automatically the first time you add a host, regardless of how SSHand was installed (`pip`, `uvx`, or from source). Override the location with the `SSH_MCP_HOSTS_FILE` env var. You can edit the file directly or let your agent call `ssh_add_host`.
 
-Copy `hosts.yaml.example` to `hosts.yaml` to get started:
+Running from a git clone and want the inventory to live next to the source instead? Point `SSH_MCP_HOSTS_FILE` at a repo-local copy:
 
 ```bash
 cp hosts.yaml.example hosts.yaml
+export SSH_MCP_HOSTS_FILE="$PWD/hosts.yaml"
 ```
 
 ### Auth types
@@ -376,7 +377,7 @@ Examples:
 
 ## Security notes
 
-- Keep `hosts.yaml` out of version control if it contains passwords — it is excluded by the included `.gitignore`. Copy `hosts.yaml.example` to `hosts.yaml` to get started.
+- By default your inventory lives outside the repo at `~/.sshand/hosts.yaml`, so it can't accidentally land in version control. If you've pointed `SSH_MCP_HOSTS_FILE` at a repo-local `hosts.yaml`, keep it out of git — it's already excluded by the included `.gitignore`.
 - Prefer key-based or agent auth over password auth for any internet-facing host.
 - The HTTP transport binds to `127.0.0.1` by default.
 - When exposing the HTTP server publicly (for Claude.ai / ChatGPT web), use TLS and consider adding authentication via a reverse proxy.
@@ -394,8 +395,8 @@ sshand/
 ├── manage.py           # Interactive TUI — setup wizard + host manager (rich + questionary)
 ├── setup_wizard.py     # Client-config snippet builders + Windows agent helpers (used by manage.py)
 ├── platform_utils.py   # Windows SSH agent helpers
-├── hosts.yaml.example  # Safe template — copy to hosts.yaml and fill in your values
-├── hosts.yaml          # Your SSH targets (gitignored — copy from hosts.yaml.example)
+├── hosts.yaml.example  # Safe template — for repo-local SSH_MCP_HOSTS_FILE setups
+├── hosts.yaml          # Optional: only present if SSH_MCP_HOSTS_FILE points here (gitignored)
 ├── INTEGRATIONS.md     # Guide: Claude.ai and ChatGPT native extensions
 ├── pyproject.toml      # Package metadata + pip/uvx install config
 ├── requirements.txt    # Plain pip install fallback

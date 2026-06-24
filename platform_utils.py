@@ -18,7 +18,6 @@ from __future__ import annotations
 import subprocess
 import sys
 from enum import Enum, auto
-from typing import Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +108,7 @@ def is_windows_admin() -> bool:
         return False
 
 
-def start_agent_service() -> Tuple[bool, str]:
+def start_agent_service() -> tuple[bool, str]:
     """
     Attempt to set the ssh-agent service to Automatic and start it.
 

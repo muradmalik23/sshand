@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -62,7 +62,7 @@ class KeyAuth(BaseModel):
             "(e.g., '~/.ssh/id_rsa', '/home/user/.ssh/deploy_key')."
         ),
     )
-    passphrase: Optional[str] = Field(
+    passphrase: str | None = Field(
         default=None,
         description="Optional passphrase to decrypt the private key.",
     )
@@ -123,7 +123,7 @@ class HostEntry(BaseModel):
         ...,
         description="Authentication config.  Use type='key', 'password', or 'agent'.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None, description="Human-readable note about this host."
     )
 
@@ -140,7 +140,7 @@ class HostEntry(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _load_raw(hosts_file: Path) -> Dict[str, Any]:
+def _load_raw(hosts_file: Path) -> dict[str, Any]:
     """Return the raw YAML dict, creating an empty one if the file is absent."""
     if not hosts_file.exists():
         return {"hosts": {}}
@@ -151,20 +151,20 @@ def _load_raw(hosts_file: Path) -> Dict[str, Any]:
     return data
 
 
-def _save_raw(data: Dict[str, Any], hosts_file: Path) -> None:
+def _save_raw(data: dict[str, Any], hosts_file: Path) -> None:
     hosts_file.parent.mkdir(parents=True, exist_ok=True)
     with hosts_file.open("w", encoding="utf-8") as fh:
         yaml.dump(data, fh, default_flow_style=False, allow_unicode=True, sort_keys=True)
 
 
-def list_hosts(hosts_file: Path = DEFAULT_HOSTS_FILE) -> Dict[str, HostEntry]:
+def list_hosts(hosts_file: Path = DEFAULT_HOSTS_FILE) -> dict[str, HostEntry]:
     """
     Return all hosts from the inventory as a dict of {alias: HostEntry}.
 
     Returns an empty dict if the inventory file does not exist yet.
     """
     data = _load_raw(hosts_file)
-    result: Dict[str, HostEntry] = {}
+    result: dict[str, HostEntry] = {}
     for alias, raw in data["hosts"].items():
         try:
             result[alias] = HostEntry.model_validate(raw)

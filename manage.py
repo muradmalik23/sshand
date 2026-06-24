@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 try:
     import questionary
@@ -100,16 +99,6 @@ _QSTYLE = Style(
 # ─── Small helpers ───────────────────────────────────────────────────────────
 
 
-def _hosts_file() -> Path:
-    # Must resolve the same way host_config.py's own default does (and thus
-    # the same way ssh_client.py's get_host() calls resolve it internally).
-    # A different fallback here would mean "Add a host" and "Test a host"
-    # silently talk to two different hosts.yaml files.
-    import host_config as hc
-
-    return hc.DEFAULT_HOSTS_FILE
-
-
 def _abort() -> None:
     console.print(f"\n[{MUTED}]Aborted.[/]")
     sys.exit(0)
@@ -183,20 +172,10 @@ def _ask_int(message: str, default: int, lo: int = 1, hi: int = 65535) -> int:
 # ─── Connection test ─────────────────────────────────────────────────────────
 
 
-def _test_connection_sync(alias: str) -> tuple[bool, str]:
-    import asyncio
-
-    try:
-        import ssh_client as sc
-
-        return asyncio.run(sc.test_connection(alias))
-    except Exception as exc:  # pragma: no cover - network dependent
-        return False, str(exc)
-
-
 def _test_host_flow(alias: str) -> tuple[bool, str]:
+    import setup_wizard as sw
     with console.status(f"[{ACCENT}]Connecting to {alias}…[/]", spinner="dots"):
-        ok, msg = _test_connection_sync(alias)
+        ok, msg = sw._test_connection_sync(alias)
     if ok:
         _ok(msg)
     else:
@@ -285,7 +264,7 @@ def _prompt_auth():
     return hc.AgentAuth(type="agent")
 
 
-def _add_host_flow(hosts_file: Path) -> Optional[str]:
+def _add_host_flow(hosts_file: Path) -> str | None:
     import host_config as hc
 
     existing = hc.list_hosts(hosts_file)
@@ -401,7 +380,7 @@ def _show_client_snippets() -> None:
     }
 
     # Show which hosts the agent will be able to reach.
-    hosts = hc.list_hosts(_hosts_file())
+    hosts = hc.list_hosts(hc.DEFAULT_HOSTS_FILE)
     if hosts:
         names = ", ".join(sorted(k for k, v in hosts.items() if not isinstance(v, Exception)))
         console.print(f"  [{MUTED}]Hosts this agent will reach:[/] [bold]{names}[/]")
@@ -437,7 +416,8 @@ def _show_client_snippets() -> None:
 
 
 def run_setup() -> None:
-    hosts_file = _hosts_file()
+    import host_config as hc
+    hosts_file = hc.DEFAULT_HOSTS_FILE
     console.clear()
     _banner()
     console.print(f"  [{MUTED}]Add a host, test it, then print client config.[/]")
@@ -470,7 +450,7 @@ def run_setup() -> None:
 # ─── Host manager ────────────────────────────────────────────────────────────
 
 
-def _pick_host(hosts_file: Path, action: str) -> Optional[str]:
+def _pick_host(hosts_file: Path, action: str) -> str | None:
     import host_config as hc
 
     hosts = hc.list_hosts(hosts_file)
@@ -487,8 +467,8 @@ def _pick_host(hosts_file: Path, action: str) -> Optional[str]:
 def run_manager() -> None:
     import host_config as hc
 
-    hosts_file = _hosts_file()
-    status: Optional[str] = None
+    hosts_file = hc.DEFAULT_HOSTS_FILE
+    status: str | None = None
 
     while True:
         # Clear + redraw each cycle so the screen updates in place rather than
@@ -566,7 +546,7 @@ def run(mode: str = "menu") -> None:
     """mode: 'setup' for the wizard, 'menu' for the host manager."""
     import host_config as hc
 
-    hc.ensure_hosts_file(_hosts_file())
+    hc.ensure_hosts_file(hc.DEFAULT_HOSTS_FILE)
     try:
         run_setup() if mode == "setup" else run_manager()
     except KeyboardInterrupt:

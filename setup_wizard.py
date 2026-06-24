@@ -353,10 +353,7 @@ def run() -> None:
     # ssh_client.get_host() reads from when we test the connection below.
     hosts_file = hc.DEFAULT_HOSTS_FILE
 
-    # Suggest alias if hosts.yaml already has entries
     existing = hc.list_hosts(hosts_file)
-    alias_hint = None if existing else None
-
     alias    = _ask("Alias  (short nickname, e.g. 'webserver', 'db-prod')", required=True)
     hostname = _ask("Hostname or IP address", required=True)
     port     = _ask_int("SSH port", 22)

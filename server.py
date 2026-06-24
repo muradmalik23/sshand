@@ -34,7 +34,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal
 
 # Make sure the package root is on sys.path when run directly
 sys.path.insert(0, str(Path(__file__).parent))
@@ -121,7 +121,7 @@ def _fmt_error(msg: str) -> str:
     return f"Error: {msg}"
 
 
-def _fmt_size(n: Optional[int]) -> str:
+def _fmt_size(n: int | None) -> str:
     if n is None:
         return "?"
     for unit in ("B", "KB", "MB", "GB", "TB"):
@@ -224,10 +224,10 @@ async def ssh_add_host(
     username: str,
     auth_type: Literal["key", "password", "agent"],
     port: int = 22,
-    key_path: Optional[str] = None,
-    key_passphrase: Optional[str] = None,
-    password: Optional[str] = None,
-    description: Optional[str] = None,
+    key_path: str | None = None,
+    key_passphrase: str | None = None,
+    password: str | None = None,
+    description: str | None = None,
     overwrite: bool = False,
 ) -> str:
     """Register a new SSH host in the inventory.
@@ -399,9 +399,9 @@ async def ssh_run_command(
     alias: str,
     command: str,
     timeout: int = 60,
-    env: Optional[Dict[str, str]] = None,
-    cwd: Optional[str] = None,
-    sudo_password: Optional[str] = None,
+    env: dict[str, str] | None = None,
+    cwd: str | None = None,
+    sudo_password: str | None = None,
     response_format: Literal["markdown", "json"] = "markdown",
 ) -> str:
     """Execute a shell command on a remote SSH host and return the output.
@@ -621,7 +621,7 @@ async def ssh_write_file(
 async def ssh_list_directory(
     alias: str,
     remote_path: str = "~",
-    limit: Optional[int] = None,
+    limit: int | None = None,
     response_format: Literal["markdown", "json"] = "markdown",
 ) -> str:
     """List the contents of a directory on a remote SSH host.

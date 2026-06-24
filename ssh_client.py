@@ -13,7 +13,6 @@ import asyncio
 import os
 import stat
 from pathlib import Path, PurePosixPath
-from typing import Dict, Optional, Tuple
 
 import paramiko
 
@@ -24,7 +23,7 @@ from host_config import AgentAuth, HostEntry, KeyAuth, PasswordAuth, get_host  #
 # ---------------------------------------------------------------------------
 
 # { alias -> paramiko.SSHClient }
-_connection_cache: Dict[str, paramiko.SSHClient] = {}
+_connection_cache: dict[str, paramiko.SSHClient] = {}
 
 
 def _is_alive(client: paramiko.SSHClient) -> bool:
@@ -102,10 +101,10 @@ def _sync_run_command(
     alias: str,
     command: str,
     timeout: int,
-    env: Optional[Dict[str, str]],
-    cwd: Optional[str] = None,
-    sudo_password: Optional[str] = None,
-) -> Tuple[int, str, str]:
+    env: dict[str, str] | None,
+    cwd: str | None = None,
+    sudo_password: str | None = None,
+) -> tuple[int, str, str]:
     """Execute *command* on the remote host and return (exit_code, stdout, stderr).
 
     cwd:
@@ -252,7 +251,7 @@ def _sync_download_file(alias: str, remote_path: str, local_path: str) -> int:
         sftp.close()
 
 
-def _sync_test_connection(alias: str) -> Tuple[bool, str]:
+def _sync_test_connection(alias: str) -> tuple[bool, str]:
     """Try to open (or reuse) a connection. Returns (success, message)."""
     try:
         client = _get_or_open(alias)
@@ -296,10 +295,10 @@ async def run_command(
     alias: str,
     command: str,
     timeout: int = 60,
-    env: Optional[Dict[str, str]] = None,
-    cwd: Optional[str] = None,
-    sudo_password: Optional[str] = None,
-) -> Tuple[int, str, str]:
+    env: dict[str, str] | None = None,
+    cwd: str | None = None,
+    sudo_password: str | None = None,
+) -> tuple[int, str, str]:
     """
     Run *command* on the SSH host named *alias*.
 
@@ -343,7 +342,7 @@ async def download_file(alias: str, remote_path: str, local_path: str) -> int:
     return await asyncio.to_thread(_sync_download_file, alias, remote_path, local_path)
 
 
-async def test_connection(alias: str) -> Tuple[bool, str]:
+async def test_connection(alias: str) -> tuple[bool, str]:
     """Check whether a connection to *alias* can be established."""
     return await asyncio.to_thread(_sync_test_connection, alias)
 

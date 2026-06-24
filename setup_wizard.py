@@ -128,8 +128,14 @@ def _server_path() -> str:
     return Path(__file__).resolve().parent.joinpath("server.py").as_posix()
 
 
-def _hosts_path() -> str:
-    return Path(__file__).resolve().parent.joinpath("hosts.yaml").as_posix()
+def _hosts_note() -> str:
+    # Informational only — never fed into a generated snippet as an env var.
+    # Hosts live at ~/.sshand/hosts.yaml (or wherever SSH_MCP_HOSTS_FILE points,
+    # if the user has set that themselves) no matter how SSHand was installed,
+    # so the snippets below don't need to set anything for this to work.
+    import host_config as hc
+
+    return str(hc.DEFAULT_HOSTS_FILE)
 
 
 def _snippet_claude_desktop() -> str:
@@ -140,7 +146,6 @@ def _snippet_claude_desktop() -> str:
             "ssh": {
                 "command": "python",
                 "args": [_server_path()],
-                "env": {"SSH_MCP_HOSTS_FILE": _hosts_path()},
             }
         }
     }
@@ -149,7 +154,6 @@ def _snippet_claude_desktop() -> str:
             "ssh": {
                 "command": "uvx",
                 "args": ["sshand"],
-                "env": {"SSH_MCP_HOSTS_FILE": _hosts_path()},
             }
         }
     }
@@ -164,6 +168,9 @@ def _snippet_claude_desktop() -> str:
   {bold("Option B — uvx")} (if you have uv installed, zero-venv):
 {_indent_json(uvx_snippet)}
 
+  No env var needed — hosts are stored at {dim(_hosts_note())}.
+  Want a different location? Add {dim('"env": {"SSH_MCP_HOSTS_FILE": "/your/path/hosts.yaml"}')}.
+
   Then {bold("restart Claude Desktop")}.
 """
 
@@ -174,7 +181,6 @@ def _snippet_cursor() -> str:
             "ssh": {
                 "command": "python",
                 "args": [_server_path()],
-                "env": {"SSH_MCP_HOSTS_FILE": _hosts_path()},
             }
         }
     }
@@ -182,6 +188,8 @@ def _snippet_cursor() -> str:
   Add to {dim('.cursor/mcp.json')} in your project root (or the global Cursor MCP settings):
 
 {_indent_json(snippet)}
+
+  No env var needed — hosts are stored at {dim(_hosts_note())}.
 """
 
 
@@ -193,7 +201,6 @@ def _snippet_vscode() -> str:
                     "type": "stdio",
                     "command": "python",
                     "args": [_server_path()],
-                    "env": {"SSH_MCP_HOSTS_FILE": _hosts_path()},
                 }
             }
         }
@@ -202,6 +209,8 @@ def _snippet_vscode() -> str:
   Add to {dim('.vscode/mcp.json')} or your workspace {dim('settings.json')}:
 
 {_indent_json(snippet)}
+
+  No env var needed — hosts are stored at {dim(_hosts_note())}.
 """
 
 

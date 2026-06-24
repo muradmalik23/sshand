@@ -346,12 +346,12 @@ def _snippet_hermes() -> str:
       ssh:
         command: "uvx"
         args: ["sshand"]
-        env:
-          SSH_MCP_HOSTS_FILE: "{sw._hosts_path()}"
 
   Installed from source instead? Use:
         command: "python"
         args: ["{sw._server_path()}"]
+
+  No env var needed either way — hosts are stored at {sw._hosts_note()}.
 
   Then start or reload Hermes:
     hermes chat        # fresh start
@@ -368,13 +368,13 @@ def _snippet_openclaw() -> str:
 
   Register SSHand (uvx — zero-venv):
 
-    mcporter config add ssh --command uvx --args sshand \\
-      --env SSH_MCP_HOSTS_FILE={sw._hosts_path()}
+    mcporter config add ssh --command uvx --args sshand
 
   Installed from source instead?
 
-    mcporter config add ssh --command python --args {sw._server_path()} \\
-      --env SSH_MCP_HOSTS_FILE={sw._hosts_path()}
+    mcporter config add ssh --command python --args {sw._server_path()}
+
+  No env var needed either way — hosts are stored at {sw._hosts_note()}.
 
   Confirm MCPorter sees it:
     mcporter list ssh --schema

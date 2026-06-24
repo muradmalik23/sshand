@@ -119,8 +119,7 @@ Add to your `claude_desktop_config.json`:
   "mcpServers": {
     "ssh": {
       "command": "uvx",
-      "args": ["sshand"],
-      "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }
+      "args": ["sshand"]
     }
   }
 }
@@ -133,12 +132,13 @@ Or with plain Python:
   "mcpServers": {
     "ssh": {
       "command": "python",
-      "args": ["/absolute/path/to/sshand/server.py"],
-      "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/sshand/hosts.yaml" }
+      "args": ["/absolute/path/to/sshand/server.py"]
     }
   }
 }
 ```
+
+No env var needed for either option — hosts are stored at `~/.sshand/hosts.yaml` automatically. See [Host inventory](#host-inventory) below if you want a different location.
 
 Restart Claude Desktop after saving.
 
@@ -153,12 +153,13 @@ Create or update `.cursor/mcp.json` in your project (or the global Cursor MCP se
   "mcpServers": {
     "ssh": {
       "command": "uvx",
-      "args": ["sshand"],
-      "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }
+      "args": ["sshand"]
     }
   }
 }
 ```
+
+No env var needed — hosts are stored at `~/.sshand/hosts.yaml` automatically.
 
 ---
 
@@ -173,13 +174,14 @@ Add to `.vscode/mcp.json` or your workspace `settings.json`:
       "ssh": {
         "type": "stdio",
         "command": "uvx",
-        "args": ["sshand"],
-        "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }
+        "args": ["sshand"]
       }
     }
   }
 }
 ```
+
+No env var needed — hosts are stored at `~/.sshand/hosts.yaml` automatically.
 
 ---
 
@@ -209,11 +211,11 @@ mcp_servers:
   ssh:
     command: "uvx"
     args: ["sshand"]
-    env:
-      SSH_MCP_HOSTS_FILE: "/absolute/path/to/hosts.yaml"
 ```
 
 If you installed SSHand from source instead of via `uvx`, point `command` at `python` and add `["/absolute/path/to/sshand/server.py"]` as `args`, same as the Claude Desktop snippet above.
+
+No env var needed either way — hosts are stored at `~/.sshand/hosts.yaml` automatically.
 
 Start (or reload) Hermes to pick it up:
 
@@ -237,7 +239,7 @@ npm install -g mcporter
 Then register SSHand with it:
 
 ```bash
-mcporter config add ssh --command uvx --args sshand --env SSH_MCP_HOSTS_FILE=/absolute/path/to/hosts.yaml
+mcporter config add ssh --command uvx --args sshand
 ```
 
 That writes an entry to `config/mcporter.json` (or `~/.mcporter/mcporter.json` for a machine-wide install) in the same `mcpServers` shape used everywhere else:
@@ -247,12 +249,13 @@ That writes an entry to `config/mcporter.json` (or `~/.mcporter/mcporter.json` f
   "mcpServers": {
     "ssh": {
       "command": "uvx",
-      "args": ["sshand"],
-      "env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }
+      "args": ["sshand"]
     }
   }
 }
 ```
+
+No env var needed — hosts are stored at `~/.sshand/hosts.yaml` automatically.
 
 Confirm MCPorter can see it and list the tools:
 
@@ -278,7 +281,9 @@ For remote access, put a reverse proxy (nginx / Caddy) in front with TLS. Never 
 
 ## Host inventory
 
-By default, hosts are stored in `~/.sshand/hosts.yaml` — created automatically the first time you add a host, regardless of how SSHand was installed (`pip`, `uvx`, or from source). Override the location with the `SSH_MCP_HOSTS_FILE` env var. You can edit the file directly or let your agent call `ssh_add_host`.
+Hosts are stored in `~/.sshand/hosts.yaml`, created automatically on startup regardless of how SSHand was installed (`pip`, `uvx`, or from source) — no env var or extra config required. You can edit the file directly or let your agent call `ssh_add_host`.
+
+Want a different location instead? Set `SSH_MCP_HOSTS_FILE` to override it, e.g. `"env": { "SSH_MCP_HOSTS_FILE": "/absolute/path/to/hosts.yaml" }` in any of the MCP configs above.
 
 Running from a git clone and want the inventory to live next to the source instead? Point `SSH_MCP_HOSTS_FILE` at a repo-local copy:
 

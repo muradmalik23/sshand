@@ -21,9 +21,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # ---------------------------------------------------------------------------
 # Default location for the hosts inventory file
+#
+# This is the single source of truth for "where is hosts.yaml when nobody
+# says otherwise". Every entry point (server.py, manage.py, setup_wizard.py)
+# must resolve the default through this constant rather than re-deriving it
+# themselves — a host added via one default and looked up via a different
+# default is exactly how "saved fine, then not found" bugs happen.
 # ---------------------------------------------------------------------------
 
-_DEFAULT_HOSTS_FILE = Path(
+DEFAULT_HOSTS_FILE = Path(
     os.environ.get("SSH_MCP_HOSTS_FILE", str(Path(__file__).parent / "hosts.yaml"))
 )
 
@@ -141,7 +147,7 @@ def _save_raw(data: Dict[str, Any], hosts_file: Path) -> None:
         yaml.dump(data, fh, default_flow_style=False, allow_unicode=True, sort_keys=True)
 
 
-def list_hosts(hosts_file: Path = _DEFAULT_HOSTS_FILE) -> Dict[str, HostEntry]:
+def list_hosts(hosts_file: Path = DEFAULT_HOSTS_FILE) -> Dict[str, HostEntry]:
     """
     Return all hosts from the inventory as a dict of {alias: HostEntry}.
 
@@ -158,7 +164,7 @@ def list_hosts(hosts_file: Path = _DEFAULT_HOSTS_FILE) -> Dict[str, HostEntry]:
     return result
 
 
-def get_host(alias: str, hosts_file: Path = _DEFAULT_HOSTS_FILE) -> HostEntry:
+def get_host(alias: str, hosts_file: Path = DEFAULT_HOSTS_FILE) -> HostEntry:
     """
     Retrieve a single host by alias.
 
@@ -174,7 +180,7 @@ def add_host(
     alias: str,
     entry: HostEntry,
     overwrite: bool = False,
-    hosts_file: Path = _DEFAULT_HOSTS_FILE,
+    hosts_file: Path = DEFAULT_HOSTS_FILE,
 ) -> None:
     """
     Add (or replace) a host in the inventory.
@@ -190,7 +196,7 @@ def add_host(
     _save_raw(data, hosts_file)
 
 
-def remove_host(alias: str, hosts_file: Path = _DEFAULT_HOSTS_FILE) -> None:
+def remove_host(alias: str, hosts_file: Path = DEFAULT_HOSTS_FILE) -> None:
     """
     Remove a host from the inventory.
 

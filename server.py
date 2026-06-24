@@ -107,10 +107,10 @@ Never commit hosts.yaml to version control if it contains real credentials.
 )
 
 # The hosts.yaml location can be overridden via SSH_MCP_HOSTS_FILE env var.
-# Default to the package directory so the server works regardless of CWD.
-_HOSTS_FILE = Path(
-    os.environ.get("SSH_MCP_HOSTS_FILE", str(Path(__file__).parent / "hosts.yaml"))
-)
+# Resolved through host_config.DEFAULT_HOSTS_FILE — the single source of
+# truth for this default — so the server, the CLI manager, and the setup
+# wizard always agree on where hosts.yaml lives.
+_HOSTS_FILE = hc.DEFAULT_HOSTS_FILE
 
 # ---------------------------------------------------------------------------
 # Shared helpers

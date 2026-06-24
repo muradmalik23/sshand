@@ -339,7 +339,10 @@ def run() -> None:
     print(_hr())
     print()
 
-    hosts_file = Path(os.environ.get("SSH_MCP_HOSTS_FILE", "hosts.yaml"))
+    # Must match host_config.py's own default resolution exactly — otherwise
+    # the host we save here ends up in a different hosts.yaml than the one
+    # ssh_client.get_host() reads from when we test the connection below.
+    hosts_file = hc.DEFAULT_HOSTS_FILE
 
     # Suggest alias if hosts.yaml already has entries
     existing = hc.list_hosts(hosts_file)

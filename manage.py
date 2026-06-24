@@ -13,7 +13,6 @@ Run via:
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 from typing import Optional
@@ -102,7 +101,13 @@ _QSTYLE = Style(
 
 
 def _hosts_file() -> Path:
-    return Path(os.environ.get("SSH_MCP_HOSTS_FILE", "hosts.yaml"))
+    # Must resolve the same way host_config.py's own default does (and thus
+    # the same way ssh_client.py's get_host() calls resolve it internally).
+    # A different fallback here would mean "Add a host" and "Test a host"
+    # silently talk to two different hosts.yaml files.
+    import host_config as hc
+
+    return hc.DEFAULT_HOSTS_FILE
 
 
 def _abort() -> None:

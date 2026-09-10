@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.4] — 2026-09-10
+
+### Fixed
+
+- **`uvx sshand` / `pip install sshand` crashed on startup with `ModuleNotFoundError: No module named 'mcp.server.fastmcp'`.** The dependency was declared as `fastmcp>=0.1.0`, which now resolves to the standalone `fastmcp` 3.x package and pulls in `mcp` 2.x — and `mcp` 2.x removed the `mcp.server.fastmcp` module that `server.py` imports. The dependency is now `mcp[cli]>=1.6.0,<2`, matching `requirements.txt` and the import the code actually uses. No code changes; a full migration to the `mcp` 2.x `MCPServer` API is tracked separately.
+
+---
+
 ## [0.1.1] — 2026-06-19
 
 ### Added
